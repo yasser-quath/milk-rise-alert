@@ -14,7 +14,7 @@ const SAMPLE_INSET_RATIO = 0.24;
 const MIN_CONFIDENCE = 8;
 const ANALYSIS_INTERVAL_MS = 110;
 const MAX_LOG_ITEMS = 6;
-const ALARM_AUDIO_SRC = "./assets/alarm.mp3";
+const ALARM_AUDIO_BASE64_PATH = "./assets/alarm.base64.txt?v=1";
 
 const state = {
   settings: loadSettings(),
@@ -32,6 +32,7 @@ const state = {
   analysisContext: null,
   overlayContext: null,
   alarmAudio: null,
+  alarmAudioDataUrl: null,
   alarmTimer: null,
   animationFrameId: null
 };
@@ -156,7 +157,7 @@ async function toggleMonitoring() {
       return;
     }
 
-    ensureAlarmAudio();
+    await ensureAlarmAudio();
     await requestWakeLock();
     state.isMonitoring = true;
     state.confirmCount = 0;
@@ -313,30 +314,48 @@ async function triggerAlarm(risePixels) {
   logEvent("Alarm", `Triggered after the milk rose by ${formatPixels(risePixels)}.`);
   render();
 
-  startAlarmLoop();
+  await startAlarmLoop();
 }
 
-function ensureAlarmAudio() {
+async function ensureAlarmAudio() {
   if (state.alarmAudio) {
     return state.alarmAudio;
   }
 
-  const audio = new Audio(ALARM_AUDIO_SRC);
+  const audio = new Audio();
   audio.loop = true;
   audio.preload = "auto";
+  audio.src = await loadAlarmAudioSource();
   state.alarmAudio = audio;
   return audio;
 }
 
-function startAlarmLoop() {
+async function loadAlarmAudioSource() {
+  if (state.alarmAudioDataUrl) {
+    return state.alarmAudioDataUrl;
+  }
+
+  const response = await fetch(ALARM_AUDIO_BASE64_PATH, { cache: "force-cache" });
+  if (!response.ok) {
+    throw new Error(`Alarm audio fetch failed with status ${response.status}`);
+  }
+
+  const base64 = (await response.text()).trim();
+  state.alarmAudioDataUrl = `data:audio/mpeg;base64,${base64}`;
+  return state.alarmAudioDataUrl;
+}
+
+async function startAlarmLoop() {
   stopAlarmLoop();
 
-  const alarmAudio = ensureAlarmAudio();
-  alarmAudio.currentTime = 0;
-  alarmAudio.play().catch(() => {
+  try {
+    const alarmAudio = await ensureAlarmAudio();
+    alarmAudio.currentTime = 0;
+    await alarmAudio.play();
+  } catch (error) {
     setStatus("Alarm triggered, but the sound could not start automatically. Tap Silence alarm and re-arm if needed.");
-    logEvent("Audio blocked", "The browser refused autoplay for the custom alarm sound.");
-  });
+    logEvent("Audio blocked", readableError(error));
+  }
 
   if ("vibrate" in navigator) {
     navigator.vibrate([220, 120, 220, 120, 480]);
@@ -590,7 +609,7 @@ function registerServiceWorker() {
   }
 
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {
+    navigator.serviceWorker.register("./sw.js?v=2").catch(() => {
     });
   });
 }

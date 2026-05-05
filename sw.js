@@ -1,11 +1,11 @@
-const CACHE_NAME = "milk-rise-alert-v2";
+const CACHE_NAME = "milk-rise-alert-v3";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./styles.css?v=1",
-  "./app.js?v=1",
+  "./app.js?v=2",
   "./manifest.webmanifest?v=1",
-  "./assets/alarm.mp3",
+  "./assets/alarm.base64.txt?v=1",
   "./assets/icon.svg",
   "./assets/apple-touch-icon.svg"
 ];
