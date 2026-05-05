@@ -14,6 +14,7 @@ const SAMPLE_INSET_RATIO = 0.24;
 const MIN_CONFIDENCE = 8;
 const ANALYSIS_INTERVAL_MS = 110;
 const MAX_LOG_ITEMS = 6;
+const ALARM_AUDIO_SRC = "./assets/alarm.mp3";
 
 const state = {
   settings: loadSettings(),
@@ -30,7 +31,7 @@ const state = {
   analysisCanvas: document.createElement("canvas"),
   analysisContext: null,
   overlayContext: null,
-  audioContext: null,
+  alarmAudio: null,
   alarmTimer: null,
   animationFrameId: null
 };
@@ -155,7 +156,7 @@ async function toggleMonitoring() {
       return;
     }
 
-    await ensureAudioContext();
+    ensureAlarmAudio();
     await requestWakeLock();
     state.isMonitoring = true;
     state.confirmCount = 0;
@@ -312,62 +313,37 @@ async function triggerAlarm(risePixels) {
   logEvent("Alarm", `Triggered after the milk rose by ${formatPixels(risePixels)}.`);
   render();
 
-  await ensureAudioContext();
   startAlarmLoop();
 }
 
-async function ensureAudioContext() {
-  if (state.audioContext == null) {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) {
-      return;
-    }
-    state.audioContext = new AudioContextClass();
+function ensureAlarmAudio() {
+  if (state.alarmAudio) {
+    return state.alarmAudio;
   }
 
-  if (state.audioContext.state === "suspended") {
-    await state.audioContext.resume();
-  }
+  const audio = new Audio(ALARM_AUDIO_SRC);
+  audio.loop = true;
+  audio.preload = "auto";
+  state.alarmAudio = audio;
+  return audio;
 }
 
 function startAlarmLoop() {
   stopAlarmLoop();
 
-  if (state.audioContext) {
-    playAlarmBurst();
-    state.alarmTimer = window.setInterval(playAlarmBurst, 900);
-  }
+  const alarmAudio = ensureAlarmAudio();
+  alarmAudio.currentTime = 0;
+  alarmAudio.play().catch(() => {
+    setStatus("Alarm triggered, but the sound could not start automatically. Tap Silence alarm and re-arm if needed.");
+    logEvent("Audio blocked", "The browser refused autoplay for the custom alarm sound.");
+  });
 
   if ("vibrate" in navigator) {
     navigator.vibrate([220, 120, 220, 120, 480]);
+    state.alarmTimer = window.setInterval(() => {
+      navigator.vibrate([220, 120, 220, 120, 480]);
+    }, 1100);
   }
-}
-
-function playAlarmBurst() {
-  if (!state.audioContext) {
-    return;
-  }
-
-  const startAt = state.audioContext.currentTime;
-  buildAlarmTone(startAt, 880, 0.18, 0.05);
-  buildAlarmTone(startAt + 0.22, 1175, 0.18, 0.05);
-}
-
-function buildAlarmTone(startAt, frequency, duration, peakGain) {
-  const oscillator = state.audioContext.createOscillator();
-  const gainNode = state.audioContext.createGain();
-
-  oscillator.type = "square";
-  oscillator.frequency.setValueAtTime(frequency, startAt);
-
-  gainNode.gain.setValueAtTime(0.0001, startAt);
-  gainNode.gain.exponentialRampToValueAtTime(peakGain, startAt + 0.02);
-  gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
-
-  oscillator.connect(gainNode);
-  gainNode.connect(state.audioContext.destination);
-  oscillator.start(startAt);
-  oscillator.stop(startAt + duration + 0.02);
 }
 
 function silenceAlarm() {
@@ -379,6 +355,11 @@ function silenceAlarm() {
 }
 
 function stopAlarmLoop() {
+  state.alarmAudio?.pause();
+  if (state.alarmAudio) {
+    state.alarmAudio.currentTime = 0;
+  }
+
   if (state.alarmTimer != null) {
     window.clearInterval(state.alarmTimer);
     state.alarmTimer = null;
