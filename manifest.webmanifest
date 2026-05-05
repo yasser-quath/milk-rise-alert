@@ -1,0 +1,21 @@
+{
+  "name": "MilkRiseAlert",
+  "short_name": "MilkAlert",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#2a130e",
+  "theme_color": "#8c3d21",
+  "description": "A camera-based milk-rise alarm for catching boil-overs before they spill.",
+  "icons": [
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "./assets/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml"
+    }
+  ]
+}
