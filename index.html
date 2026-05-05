@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#8c3d21">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MilkRiseAlert">
+  <title>MilkRiseAlert</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=1">
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.svg">
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css?v=1">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero-card">
+      <p class="eyebrow">Kitchen Watch</p>
+      <div class="hero-copy">
+        <h1>MilkRiseAlert</h1>
+        <p class="hero-text">
+          Point your phone at the pot, capture the current milk line, and the app will ring as soon as the liquid starts climbing toward overflow.
+        </p>
+      </div>
+      <p id="status-banner" class="status-banner" aria-live="polite">Ready to start the rear camera.</p>
+    </section>
+
+    <section class="camera-card">
+      <div class="camera-frame">
+        <video id="camera-preview" class="camera-preview" playsinline muted autoplay></video>
+        <canvas id="overlay-canvas" class="overlay-canvas" aria-hidden="true"></canvas>
+        <div id="camera-empty-state" class="camera-empty-state">
+          Allow camera access, then angle the phone slightly so the milk surface line is visible.
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button id="start-camera-button" class="button button-primary" type="button">Start camera</button>
+        <button id="capture-baseline-button" class="button button-secondary" type="button" disabled>Set baseline</button>
+        <button id="monitor-button" class="button button-secondary" type="button" disabled>Start monitoring</button>
+        <button id="silence-button" class="button button-danger" type="button" disabled>Silence alarm</button>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-card">
+        <p class="stat-label">Baseline</p>
+        <p id="baseline-value" class="stat-value">--</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-label">Current line</p>
+        <p id="current-value" class="stat-value">--</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-label">Rise</p>
+        <p id="rise-value" class="stat-value">0 px</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-label">Confidence</p>
+        <p id="confidence-value" class="stat-value">--</p>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <h2>Detection tuning</h2>
+        <p>These settings help when your pot, stove light, or viewing angle changes.</p>
+      </div>
+
+      <label class="range-field" for="zone-top-input">
+        <span>Watch zone top</span>
+        <strong id="zone-top-output">22%</strong>
+        <input id="zone-top-input" type="range" min="5" max="70" step="1">
+      </label>
+
+      <label class="range-field" for="zone-bottom-input">
+        <span>Watch zone bottom</span>
+        <strong id="zone-bottom-output">78%</strong>
+        <input id="zone-bottom-input" type="range" min="25" max="95" step="1">
+      </label>
+
+      <label class="range-field" for="trigger-distance-input">
+        <span>Alarm rise distance</span>
+        <strong id="trigger-distance-output">14 px</strong>
+        <input id="trigger-distance-input" type="range" min="6" max="40" step="1">
+      </label>
+
+      <label class="range-field" for="confirm-frames-input">
+        <span>Frames to confirm</span>
+        <strong id="confirm-frames-output">4</strong>
+        <input id="confirm-frames-input" type="range" min="2" max="10" step="1">
+      </label>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <h2>How to use it</h2>
+      </div>
+      <ol class="steps-list">
+        <li>Place the phone above the pot but tilt it enough that the milk surface edge is visible, not perfectly flat from straight overhead.</li>
+        <li>Tap <span class="inline-pill">Start camera</span> and wait for the preview.</li>
+        <li>When the milk looks calm, tap <span class="inline-pill">Set baseline</span>.</li>
+        <li>Tap <span class="inline-pill">Start monitoring</span>. The alarm fires after several rising frames in a row.</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <h2>Activity</h2>
+      </div>
+      <ul id="event-log" class="event-log"></ul>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js?v=1"></script>
+</body>
+</html>
